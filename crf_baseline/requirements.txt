@@ -1,0 +1,4 @@
+matplotlib
+numpy
+sklearn
+sklearn.crfsuite==0.3.6
