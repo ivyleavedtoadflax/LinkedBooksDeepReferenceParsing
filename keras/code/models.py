@@ -98,8 +98,10 @@ def BiLSTM_model(filename, train, output,
     end_string = "====== {0} end ======".format(filename)
     
     # Create directory to store results
-    os.makedirs(folder_path+"/"+filename)
-    filepath = folder_path+"/"+filename+"/"+filename
+    
+    model_folder_path = os.path.join(folder_path, filename)
+    os.makedirs(model_folder_path)
+    filepath = os.path.join(model_folder_path, filename)
 
     # Set print outputs file
     file, stdout_original = setPrintToFile("{0}.txt".format(filepath))    
