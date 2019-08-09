@@ -313,3 +313,121 @@ def get_optimizer(type, learning_rate=0.001, decay=0.0):
     if type == "rmsprop":
         return RMSprop(lr=learning_rate, decay=decay)
 
+def BiLSTM_predict(model_weights, output, word2ind, maxWords, ind2label, word_embeddings=True, pretrained_embedding="", word_embedding_size=100, maxChar=0, char_embedding_type="", char2ind="", char_embedding_size=50, lstm_hidden=32, dropout=0, optimizer='rmsprop'):
+    """
+        Build, train and test a BiLSTM Keras model. Works for multi-tasking learning.
+        The model architecture looks like:
+
+            - Words representations:
+                - Word embeddings
+                - Character-level representation [Optional]
+            - Dropout
+            - Bidirectional LSTM
+            - Dropout
+            - Softmax/CRF for predictions
+
+
+        :param filename: File to redirect the printing
+        :param train: Boolean if the model must be trained or not. If False, the model's wieght are expected to be stored in "folder_path/filename/filename.h5"
+        :param otput: "crf" or "softmax". Type of prediction layer to use
+
+        :param X_train: Data to train the model
+        :param X_test: Data to test the model
+        :param word2ind: Dictionary containing all words in the training data and a unique integer per word
+        :param maxWords: Maximum number of words in a sequence
+
+        :param y_train: Labels to train the model for the prediction task
+        :param y_test: Labels to test the model for the prediction task
+        :param ind2label: Dictionary where all labels for task 1 are mapped into a unique integer
+
+        :param validation: Boolean. If true, the validation score will be computed from 'X_valid' and 'y_valid'
+        :param X_valid: Optional. Validation dataset
+        :param y_valid: Optional. Validation dataset labels
+
+        :param word_embeddings: Boolean value. Add word embeddings into the model.
+        :param pretrained_embedding: Use the pretrained word embeddings.
+                                     Three values:
+                                            - "":    Do not use pre-trained word embeddings (Default)
+                                            - False: Use the pre-trained embedding vectors as the weights in the Embedding layer
+                                            - True:  Use the pre-trained embedding vectors as weight initialiers. The Embedding layer will still be trained.
+        :param word_embedding_size: Size of the pre-trained word embedding to use (100 or 300)
+
+        :param maxChar: The maximum numbers of characters in a word. If set to 0, the model will not use character-level representations of the words
+        :param char_embedding_type: Type of model to use in order to compute the character-level representation of words: Two values: "CNN" or "BILSTM"
+        :param char2ind: A dictionary where each character is maped into a unique integer
+        :param char_embedding_size: size of the character-level word representations
+
+        :param lstm_hidden: Dimentionality of the LSTM output space
+        :param nbr_epochs: Number of epochs to train the model
+        :param batch_size: Size of batches while training the model
+        :param dropout: Rate to apply for each Dropout layer in the model
+        :param optimizer: Optimizer to use while compiling the model
+        :param early_stopping_patience: Number of continuous tolerated epochs without improvement during training.
+
+        :param folder_path: Path to the directory storing all to-be-generated files
+        :param gen_confusion_matrix: Boolean value. Generated confusion matrices or not.
+        :param printPadding: Boolean. Prints the classification matrix taking padding as a possible label.
+
+
+        :return: The classification scores for both tasks.
+    """
+
+    # Model params
+    nbr_words = len(word2ind)+1
+    out_size = len(ind2label)+1
+    best_results = ""
+
+    embeddings_list = []
+    inputs = []
+
+    # Input - Word Embeddings
+
+    if word_embeddings:
+        print("loading Word embedding")
+        word_input = Input((maxWords,))
+        inputs.append(word_input)
+
+        if pretrained_embedding == "":
+            word_embedding = Embedding(nbr_words, word_embedding_size)(word_input)
+        else:
+            # Retrieve embeddings
+            embedding_matrix = word2VecEmbeddings(word2ind, word_embedding_size)
+            word_embedding = Embedding(nbr_words, word_embedding_size, weights=[embedding_matrix], trainable=pretrained_embedding, mask_zero=False)(word_input)
+        embeddings_list.append(word_embedding)
+
+    # Input - Characters Embeddings
+
+    if maxChar != 0:
+        character_input     = Input((maxWords,maxChar,))
+        char_embedding      = character_embedding_layer(char_embedding_type, character_input, maxChar, len(char2ind)+1, char_embedding_size)
+        embeddings_list.append(char_embedding)
+        inputs.append(character_input)
+
+    # Model - Inner Layers - BiLSTM with Dropout
+    embeddings = concatenate(embeddings_list) if len(embeddings_list)==2 else embeddings_list[0]
+    model = Dropout(dropout)(embeddings)
+    model = Bidirectional(LSTM(lstm_hidden, return_sequences=True, dropout=dropout))(model)
+    model = Dropout(dropout)(model)
+
+
+    if output == "crf":
+        # Output - CRF
+        crfs = [[CRF(out_size),out_size] for out_size in [len(x)+1 for x in ind2label]]
+        outputs = [x[0](Dense(x[1])(model)) for x in crfs]
+        model_loss = [x[0].loss_function for x in crfs]
+        model_metrics = [x[0].viterbi_acc for x in crfs]
+
+    if output == "softmax":
+        outputs = [Dense(out_size, activation='softmax')(model) for out_size in [len(x)+1 for x in ind2label]]
+        model_loss = ['categorical_crossentropy' for x in outputs]
+        model_metrics = None
+
+    # Model
+    model = Model(inputs=inputs, outputs=outputs)
+    model.compile(loss=model_loss, metrics=model_metrics, optimizer=get_optimizer(optimizer))
+    print(model.summary(line_length=150),"\n\n\n\n")
+
+    model.load_weights(model_weights)
+
+    return None
+
