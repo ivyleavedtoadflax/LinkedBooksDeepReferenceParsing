@@ -157,6 +157,14 @@ def BiLSTM_model(filename, train, output,
     model.compile(loss=model_loss, metrics=model_metrics, optimizer=get_optimizer(optimizer))
     print(model.summary(line_length=150),"\n\n\n\n")
 
+    # Save the model to json format
+
+    model_json = model.to_json()
+    model_json_save_path = os.path.join(
+        model_folder_path, "%s.json" % filename
+    )
+    with open(model_json_save_path, "w") as json_file:
+        json_file.write(model_json)
 
     # Training Callbacks:
     callbacks = []
