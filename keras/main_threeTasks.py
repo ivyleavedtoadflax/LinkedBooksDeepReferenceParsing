@@ -5,7 +5,7 @@ import tensorflow
 # Seed
 random.seed(42)
 np.random.seed(42)
-tensorflow.set_random_seed(42)
+tensorflow.compat.v1.set_random_seed(42)
 
 import ipdb
 import os

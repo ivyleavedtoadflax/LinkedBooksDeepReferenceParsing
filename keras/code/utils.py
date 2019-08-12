@@ -3,13 +3,12 @@
 """
 Support functions for dealing with data and building models
 """
-
 import random
 import numpy as np
 import tensorflow
 random.seed(42)
 np.random.seed(42)
-tensorflow.set_random_seed(42)
+tensorflow.compat.v1.set_random_seed(42)
 
 import json
 import sys

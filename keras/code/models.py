@@ -3,14 +3,13 @@
 """
 Functions for building Keras models
 """
-
 import os
 import random
 import numpy as np
 import tensorflow
 random.seed(42)
 np.random.seed(42)
-tensorflow.set_random_seed(42)
+tensorflow.compat.v1.set_random_seed(42)
 
 # Keras function
 from keras.callbacks import EarlyStopping
