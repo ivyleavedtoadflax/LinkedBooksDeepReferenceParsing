@@ -1,9 +1,12 @@
+import logging
+import os
 import random
-from code.models import *
-from code.utils import *
+from code.models import BiLSTM_predict
+from code.utils import (characterLevelData, characterLevelIndex,
+                        encodePadData_x, encodePadData_y, indexData_x,
+                        indexData_y, load_data, mergeDigits, read_json)
 
 import numpy as np
-
 import tensorflow
 
 # Seed
