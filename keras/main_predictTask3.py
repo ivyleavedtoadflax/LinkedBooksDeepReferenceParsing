@@ -43,7 +43,6 @@ X_test_w, y_test1_w, y_test2_w, y_test3_w = load_data("dataset/clean_test.txt")
 
 digits_word = "$NUM$"
 
-
 X_test_w = mergeDigits([X_test_w], digits_word)
 X_test_w = X_test_w[0]
 
@@ -64,7 +63,7 @@ ukn_words = "out-of-vocabulary"
 X_test = encodePadData_x(
     x=X_test_w,
     word2ind=word2ind,
-    maxlen=maxlen,
+    maxlen=54, #maxlen,
     ukn_words=ukn_words,
     padding_style=padding_style
 )
