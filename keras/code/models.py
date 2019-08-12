@@ -326,23 +326,13 @@ def BiLSTM_predict(model_weights, output, word2ind, maxWords, ind2label, word_em
             - Softmax/CRF for predictions
 
 
-        :param filename: File to redirect the printing
-        :param train: Boolean if the model must be trained or not. If False, the model's wieght are expected to be stored in "folder_path/filename/filename.h5"
+        :param data: File to redirect the printing
         :param otput: "crf" or "softmax". Type of prediction layer to use
 
-        :param X_train: Data to train the model
-        :param X_test: Data to test the model
         :param word2ind: Dictionary containing all words in the training data and a unique integer per word
         :param maxWords: Maximum number of words in a sequence
 
-        :param y_train: Labels to train the model for the prediction task
-        :param y_test: Labels to test the model for the prediction task
         :param ind2label: Dictionary where all labels for task 1 are mapped into a unique integer
-
-        :param validation: Boolean. If true, the validation score will be computed from 'X_valid' and 'y_valid'
-        :param X_valid: Optional. Validation dataset
-        :param y_valid: Optional. Validation dataset labels
-
         :param word_embeddings: Boolean value. Add word embeddings into the model.
         :param pretrained_embedding: Use the pretrained word embeddings.
                                      Three values:
@@ -370,6 +360,8 @@ def BiLSTM_predict(model_weights, output, word2ind, maxWords, ind2label, word_em
 
         :return: The classification scores for both tasks.
     """
+    print("word2ind:", len(word2ind))
+
 
     # Model params
     nbr_words = len(word2ind)+1
@@ -382,13 +374,15 @@ def BiLSTM_predict(model_weights, output, word2ind, maxWords, ind2label, word_em
     # Input - Word Embeddings
 
     if word_embeddings:
-        print("loading Word embedding")
+        logger.info("loading Word embedding")
         word_input = Input((maxWords,))
         inputs.append(word_input)
 
         if pretrained_embedding == "":
+            logger.info("Not using a pre-trained word embedding")
             word_embedding = Embedding(nbr_words, word_embedding_size)(word_input)
         else:
+            logger.info("Retrieving word embedding")
             # Retrieve embeddings
             embedding_matrix = word2VecEmbeddings(word2ind, word_embedding_size)
             word_embedding = Embedding(nbr_words, word_embedding_size, weights=[embedding_matrix], trainable=pretrained_embedding, mask_zero=False)(word_input)
@@ -396,13 +390,23 @@ def BiLSTM_predict(model_weights, output, word2ind, maxWords, ind2label, word_em
 
     # Input - Characters Embeddings
 
+    
+
     if maxChar != 0:
-        character_input     = Input((maxWords,maxChar,))
-        char_embedding      = character_embedding_layer(char_embedding_type, character_input, maxChar, len(char2ind)+1, char_embedding_size)
+
+        logger.info("Using character level embddings with %s chars per word", maxChar)
+
+        character_input = Input((maxWords,maxChar,))
+        char_embedding = character_embedding_layer(char_embedding_type, character_input, maxChar, len(char2ind)+1, char_embedding_size)
         embeddings_list.append(char_embedding)
         inputs.append(character_input)
 
+    else:
+
+        logger.info("Not using character level embeddings")
+
     # Model - Inner Layers - BiLSTM with Dropout
+
     embeddings = concatenate(embeddings_list) if len(embeddings_list)==2 else embeddings_list[0]
     model = Dropout(dropout)(embeddings)
     model = Bidirectional(LSTM(lstm_hidden, return_sequences=True, dropout=dropout))(model)
@@ -410,6 +414,7 @@ def BiLSTM_predict(model_weights, output, word2ind, maxWords, ind2label, word_em
 
 
     if output == "crf":
+        logger.info("Using CRF on output layer")
         # Output - CRF
         crfs = [[CRF(out_size),out_size] for out_size in [len(x)+1 for x in ind2label]]
         outputs = [x[0](Dense(x[1])(model)) for x in crfs]
@@ -417,16 +422,48 @@ def BiLSTM_predict(model_weights, output, word2ind, maxWords, ind2label, word_em
         model_metrics = [x[0].viterbi_acc for x in crfs]
 
     if output == "softmax":
+        logger.info("Using softmax on output layer")
         outputs = [Dense(out_size, activation='softmax')(model) for out_size in [len(x)+1 for x in ind2label]]
         model_loss = ['categorical_crossentropy' for x in outputs]
         model_metrics = None
 
     # Model
+
     model = Model(inputs=inputs, outputs=outputs)
+    logger.info("compiling model")
     model.compile(loss=model_loss, metrics=model_metrics, optimizer=get_optimizer(optimizer))
-    print(model.summary(line_length=150),"\n\n\n\n")
+
+    logger.info("Loading model weights from %s", model_weights)
+
+    # NOTE: differs from original here
 
     model.load_weights(model_weights)
+    #save_load_utils.load_all_weights(model, model_weights)
 
-    return None
+    logger.info("Making predictions")
+
+    pred = model.predict(data)
+
+    pred = np.asarray(pred)
+
+    # Compute validation score
+
+    pred_index = np.argmax(pred, axis=-1)
+
+    # Index 0 in the predictions referes to padding
+    ind2labelNew = ind2label[0].copy()
+    ind2labelNew.update({0: "null"})
+
+    # Compute the labels for each prediction
+    pred_label = [[ind2labelNew[x] for x in a] for a in pred_index]
+
+    # Flatten data
+    predict_flat = np.ravel(pred_label)
+
+    #for i, y_target in enumerate(data):
+    #    # Compute predictions, flatten
+    #        predictions = compute_task3_predictions(model, y_target, ind2label[i])
+
+    return predict_flat
+
 
