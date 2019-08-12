@@ -40,11 +40,13 @@ write_json(label2ind1, os.path.join(inter_path, "label2ind1.json"))
 write_json(label2ind2, os.path.join(inter_path, "label2ind2.json"))
 write_json(label2ind3, os.path.join(inter_path, "label2ind3.json"))
 
+write_json(ind2label1, os.path.join(inter_path, "ind2label1.json"))
+write_json(ind2label2, os.path.join(inter_path, "ind2label2.json"))
+write_json(ind2label3, os.path.join(inter_path, "ind2label3.json"))
+
 print(ind2label1)
 print(ind2label2)
 print(ind2label3)
-
-
 
 # Convert data into indexes data
 maxlen  = max([len(xx) for xx in X_train_w])
@@ -71,8 +73,10 @@ y_valid3  = encodePadData_y(y_valid3_w, label2ind3, maxlen, padding_style)
 char2ind, maxWords, maxChar = characterLevelIndex(X_train_w, digits_word)
 
 write_json(char2ind, os.path.join(inter_path, "char2ind.json"))
-write_json(maxWords, os.path.join(inter_path, "maxWords.json"))
-write_json(maxChar, os.path.join(inter_path, "maxChar.json"))
+
+maxes = {"maxWords": maxWords, "maxChar": maxChar, "maxlen": maxlen}
+
+write_json(maxes, os.path.join(inter_path, "maxes.json"))
 
 X_train_char = characterLevelData(X_train_w, char2ind, maxWords, maxChar, digits_word, padding_style)
 X_test_char  = characterLevelData(X_test_w,  char2ind, maxWords, maxChar, digits_word, padding_style)
