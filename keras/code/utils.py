@@ -11,6 +11,7 @@ random.seed(42)
 np.random.seed(42)
 tensorflow.set_random_seed(42)
 
+import json
 import sys
 import csv
 import itertools
@@ -25,7 +26,9 @@ from sklearn_crfsuite import metrics
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
+import logging
 
+logger = logging.getLogger(__name__)
 
 
 def load_data(filepath):
@@ -686,3 +689,42 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+
+def write_json(x, path):
+
+    logger.info("Writing data to %s", path)
+
+    with open(path, "w") as fb:
+        fb.write(json.dumps(x))
+
+def read_json(path, keys_to_int=False):
+
+    logger.info("Reading data from %s", path)
+
+    with open(path, "r") as fb:
+        if keys_to_int:
+            out = json.loads(fb.read(), object_hook=json_keys_to_int)
+        else:
+            out = json.loads(fb.read())
+
+    logger.info("Returning object of length %s", len(out))
+
+    return out
+
+def json_keys_to_int(x):
+    """
+    https://stackoverflow.com/questions/1450957/pythons-json-module-converts-int-dictionary-keys-to-strings
+    """
+    if isinstance(x, dict):
+        out = {}
+        errors = {}
+        for key, value in x.items():
+            try:
+                out[int(key)] = value
+            except ValueError:
+                logger.exception(
+                    "Not all keys could be converted to int, "
+                    "try again with keys_to_int=False"
+                )
+                break
+    return out

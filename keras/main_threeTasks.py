@@ -7,15 +7,18 @@ random.seed(42)
 np.random.seed(42)
 tensorflow.set_random_seed(42)
 
+import ipdb
+import os
+
 # Models and Utils scripts
 from code.models import *
 from code.utils import *
 
 
 # Load entire data
-X_train_w, y_train1_w, y_train2_w, y_train3_w 	= load_data("dataset/clean_train.txt")	# Training data
-X_test_w,  y_test1_w,  y_test2_w,  y_test3_w 	= load_data("dataset/clean_test.txt")	# Testing data
-X_valid_w, y_valid1_w, y_valid2_w, y_valid3_w 	= load_data("dataset/clean_valid.txt")	# Validation data
+X_train_w, y_train1_w, y_train2_w, y_train3_w = load_data("dataset/clean_train.txt")	# Training data
+X_test_w,  y_test1_w,  y_test2_w,  y_test3_w = load_data("dataset/clean_test.txt")	# Testing data
+X_valid_w, y_valid1_w, y_valid2_w, y_valid3_w = load_data("dataset/clean_valid.txt")	# Validation data
 
 
 # Merge digits under the same word
@@ -28,6 +31,14 @@ word2ind,   ind2word   =  indexData_x(X_train_w, ukn_words)
 label2ind1, ind2label1 =  indexData_y(y_train1_w)
 label2ind2, ind2label2 =  indexData_y(y_train2_w)
 label2ind3, ind2label3 =  indexData_y(y_train3_w)
+
+inter_path = os.path.join("keras", "data")
+
+write_json(word2ind, os.path.join(inter_path, "word2ind.json"))
+write_json(ind2word, os.path.join(inter_path, "ind2word.json"))
+write_json(label2ind1, os.path.join(inter_path, "label2ind1.json"))
+write_json(label2ind2, os.path.join(inter_path, "label2ind2.json"))
+write_json(label2ind3, os.path.join(inter_path, "label2ind3.json"))
 
 print(ind2label1)
 print(ind2label2)
@@ -58,6 +69,11 @@ y_valid3  = encodePadData_y(y_valid3_w, label2ind3, maxlen, padding_style)
 
 # Create the character level data
 char2ind, maxWords, maxChar = characterLevelIndex(X_train_w, digits_word)
+
+write_json(char2ind, os.path.join(inter_path, "char2ind.json"))
+write_json(maxWords, os.path.join(inter_path, "maxWords.json"))
+write_json(maxChar, os.path.join(inter_path, "maxChar.json"))
+
 X_train_char = characterLevelData(X_train_w, char2ind, maxWords, maxChar, digits_word, padding_style)
 X_test_char  = characterLevelData(X_test_w,  char2ind, maxWords, maxChar, digits_word, padding_style)
 X_valid_char = characterLevelData(X_valid_w, char2ind, maxWords, maxChar, digits_word, padding_style)
