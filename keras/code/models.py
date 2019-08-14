@@ -3,7 +3,6 @@
 """
 Functions for building Keras models
 """
-import ipdb
 import os
 import random
 import numpy as np
@@ -379,7 +378,6 @@ def BiLSTM_predict(data, model_weights, output, word2ind, maxWords, ind2label, w
     """
     print("word2ind:", len(word2ind))
 
-    ipdb.set_trace()
 
 
     # Model params
@@ -415,7 +413,6 @@ def BiLSTM_predict(data, model_weights, output, word2ind, maxWords, ind2label, w
 
         logger.info("Using character level embddings with %s chars per word", maxChar)
 
-        ipdb.set_trace()
 
         character_input = Input((maxWords, maxChar,))
         char_embedding = character_embedding_layer(char_embedding_type, character_input, maxChar, len(char2ind)+1, char_embedding_size)
@@ -481,10 +478,8 @@ def BiLSTM_predict(data, model_weights, output, word2ind, maxWords, ind2label, w
     # Flatten data
     predict_flat = np.ravel(pred_label)
 
-    #for i, y_target in enumerate(data):
-    #    # Compute predictions, flatten
-    #        predictions = compute_task3_predictions(model, y_target, ind2label[i])
+    out = [i for i in predict_flat if i != "null"]
 
-    return predict_flat
+    return out
 
 

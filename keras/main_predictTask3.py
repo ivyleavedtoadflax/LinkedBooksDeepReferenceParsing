@@ -5,10 +5,10 @@ from code.models import BiLSTM_predict
 from code.utils import (characterLevelData, characterLevelIndex,
                         encodePadData_x, encodePadData_y, indexData_x,
                         indexData_y, load_data, mergeDigits, read_json)
-
+import json
 import numpy as np
+import pandas as pd
 import tensorflow
-import ipdb
 
 # Seed
 random.seed(42)
@@ -40,9 +40,8 @@ logger.info("Loading data")
 
 # Load just word data (no tags)
 
-ipdb.set_trace()
 
-# X_test_w: list of lists where each list is a line 
+# X_test_w: list of lists where each list is a line
 # (which may contain a reference)
 
 X_test_w, y_test1_w, y_test2_w, y_test3_w = load_data("dataset/clean_test.txt")
@@ -71,8 +70,8 @@ padding_style = 'pre'
 
 ukn_words = "out-of-vocabulary"
 
-# X_test.shape = (2258, 54)
-# Vector of length 54 for each sample in X_test_w
+# X_test.shape = (2258, 73)
+# Vector of length 73 for each sample in X_test_w
 
 X_test = encodePadData_x(
     x=X_test_w,
@@ -84,8 +83,6 @@ X_test = encodePadData_x(
 
 # X_test_char.shape = (2258, 73, 54)
 # Each character has a vector of length ? within each token vector
-
-ipdb.set_trace()
 
 X_test_char = characterLevelData(
     X=X_test_w,
@@ -117,4 +114,79 @@ out = BiLSTM_predict(
     lstm_hidden=200
 )
 
-print(out)
+
+def create_prodigy_format(tokens, labels):
+
+    prodigy_data = []
+
+    all_token_index = 0
+
+    for line in tokens:
+        prodigy_example = {}
+        line_token_index = 0
+
+        tokens = []
+        line_labels = []
+
+        for token in line:
+
+            tokens.append({
+                "text": token, 
+                "index": line_token_index
+            })
+
+            line_labels.append({
+                "label": labels[line_token_index],
+                "start": line_token_index,
+                "end": line_token_index,
+                "text": token,
+            })
+
+            prodigy_example["text"] = " ".join(line)
+            prodigy_example["tokens"] = tokens
+            prodigy_example["labels"] = line_labels
+
+            line_token_index += 1
+            all_token_index += 1
+
+        prodigy_data.append(prodigy_example)
+
+    return prodigy_data
+
+def write_jsonl(input_data, outfile, shuffle=False):
+    """Write a dict or list to a newline delimited json lines file
+
+    Sentences are shuffled first if shuffle=True is passed
+    """
+    with open(outfile, "w") as fb:
+
+        # Check if a dict (and convert to list if so)
+
+        if isinstance(input_data, dict):
+            input_data = [value for key, value in input_data.items()]
+
+        # If shuffle=True shuffle the data
+
+        if shuffle:
+            input_data = random.sample(input_data, k=len(input_data))
+
+        # Write out to jsonl file
+
+        logger.info("Writing jsonl file to file: %s", outfile)
+
+        for i in input_data:
+            json_ = json.dumps(i) + "\n"
+            fb.write(json_)
+
+flat_x = [item for sublist in X_test_w for item in sublist]
+foo = list(zip(flat_x, out))
+df = pd.DataFrame(foo, columns=["token", "label"])
+df.to_csv("prediction.csv", index=False)
+
+prod_format = create_prodigy_format(tokens=X_test_w, labels=out)
+
+write_jsonl(prod_format, "predictions.jsonl")
+
+
+
+
