@@ -3,13 +3,14 @@
 """
 Functions for building Keras models
 """
+import ipdb
 import os
 import random
 import numpy as np
 import tensorflow
 random.seed(42)
 np.random.seed(42)
-tensorflow.compat.v1.set_random_seed(42)
+tensorflow.set_random_seed(42)
 
 # Keras function
 from keras.callbacks import EarlyStopping
@@ -254,7 +255,7 @@ def BiLSTM_model(filename, train, output,
             print(metrics.flat_classification_report([target], [predictions], digits=4, labels=list(ind2label[i].values())))
 
             # Generate confusion matrices
-            save_confusion_matrix(target, predictions,  list(ind2label[i].values()), "{0}_task_{1}_confusion_matrix_validation".format(filepath,str(i+1)))
+            save_confusion_matrix(target, predictions, list(ind2label[i].values()), "{0}_task_{1}_confusion_matrix_validation".format(filepath,str(i+1)))
 
 
     # Close file
@@ -328,7 +329,7 @@ def get_optimizer(type, learning_rate=0.001, decay=0.0):
     if type == "rmsprop":
         return RMSprop(lr=learning_rate, decay=decay)
 
-def BiLSTM_predict(model_weights, output, word2ind, maxWords, ind2label, word_embeddings=True, pretrained_embedding="", word_embedding_size=100, maxChar=0, char_embedding_type="", char2ind="", char_embedding_size=50, lstm_hidden=32, dropout=0, optimizer='rmsprop'):
+def BiLSTM_predict(data, model_weights, output, word2ind, maxWords, ind2label, word_embeddings=True, pretrained_embedding="", word_embedding_size=100, maxChar=0, char_embedding_type="", char2ind="", char_embedding_size=50, lstm_hidden=32, dropout=0, optimizer='rmsprop'):
     """
         Build, train and test a BiLSTM Keras model. Works for multi-tasking learning.
         The model architecture looks like:
@@ -378,6 +379,8 @@ def BiLSTM_predict(model_weights, output, word2ind, maxWords, ind2label, word_em
     """
     print("word2ind:", len(word2ind))
 
+    ipdb.set_trace()
+
 
     # Model params
     nbr_words = len(word2ind)+1
@@ -412,7 +415,9 @@ def BiLSTM_predict(model_weights, output, word2ind, maxWords, ind2label, word_em
 
         logger.info("Using character level embddings with %s chars per word", maxChar)
 
-        character_input = Input((maxWords,maxChar,))
+        ipdb.set_trace()
+
+        character_input = Input((maxWords, maxChar,))
         char_embedding = character_embedding_layer(char_embedding_type, character_input, maxChar, len(char2ind)+1, char_embedding_size)
         embeddings_list.append(char_embedding)
         inputs.append(character_input)

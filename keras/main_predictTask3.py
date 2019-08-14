@@ -8,6 +8,7 @@ from code.utils import (characterLevelData, characterLevelIndex,
 
 import numpy as np
 import tensorflow
+import ipdb
 
 # Seed
 random.seed(42)
@@ -30,7 +31,7 @@ ind2label3 = read_json(os.path.join(inter_path, "ind2label3.json"), keys_to_int=
 maxes = read_json(os.path.join(inter_path, "maxes.json"))
 
 maxChar = maxes["maxChar"]
-maxWords = maxes["maxChar"]
+maxWords = maxes["maxWords"]
 maxlen = maxes["maxlen"]
 
 # Load entire data
@@ -39,11 +40,21 @@ logger.info("Loading data")
 
 # Load just word data (no tags)
 
+ipdb.set_trace()
+
+# X_test_w: list of lists where each list is a line 
+# (which may contain a reference)
+
 X_test_w, y_test1_w, y_test2_w, y_test3_w = load_data("dataset/clean_test.txt")
+
 
 digits_word = "$NUM$"
 
 X_test_w = mergeDigits([X_test_w], digits_word)
+
+# Subset the list (it only contains one thing)
+# This may not be right(!?)
+
 X_test_w = X_test_w[0]
 
 # Compute indexes for words+labels in the training data
@@ -60,13 +71,21 @@ padding_style = 'pre'
 
 ukn_words = "out-of-vocabulary"
 
+# X_test.shape = (2258, 54)
+# Vector of length 54 for each sample in X_test_w
+
 X_test = encodePadData_x(
     x=X_test_w,
     word2ind=word2ind,
-    maxlen=54, #maxlen,
+    maxlen=maxlen,
     ukn_words=ukn_words,
     padding_style=padding_style
 )
+
+# X_test_char.shape = (2258, 73, 54)
+# Each character has a vector of length ? within each token vector
+
+ipdb.set_trace()
 
 X_test_char = characterLevelData(
     X=X_test_w,

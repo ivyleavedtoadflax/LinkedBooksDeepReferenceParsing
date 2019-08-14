@@ -76,7 +76,7 @@ for task in ["t3", "t2", "t1"]: #Ordered according to increase computation time
 	rs = RandomizedSearchCV(crf, params_space, 
 							cv=3, 
 							verbose=1, 
-							n_jobs=-10, 
+							n_jobs=1, 
 							n_iter=5, 
 							scoring=scorer)
 	rs.fit(X_train, y_train)
