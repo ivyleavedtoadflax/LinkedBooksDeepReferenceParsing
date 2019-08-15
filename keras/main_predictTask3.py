@@ -46,6 +46,15 @@ logger.info("Loading data")
 
 X_test_w, y_test1_w, y_test2_w, y_test3_w = load_data("dataset/clean_test.txt")
 
+with open("/home/matthew/Documents/wellcome/datalabs/modelling/policy/reference_labelling/l10_conll_format.txt") as fb:
+    out = fb.read()
+
+import ipdb
+ipdb.set_trace()
+
+X_test_w = out
+
+
 
 digits_word = "$NUM$"
 
@@ -126,28 +135,38 @@ def create_prodigy_format(tokens, labels):
         line_token_index = 0
 
         tokens = []
-        line_labels = []
+        spans = []
+        token_start = 0
 
-        for token in line:
+        for i, token in enumerate(line):
+
+            token_end = token_start + len(token)
 
             tokens.append({
                 "text": token, 
-                "index": line_token_index
+                "id": line_token_index,
+                "start": token_start,
+                "end": token_end,
             })
 
-            line_labels.append({
+
+            spans.append({
                 "label": labels[line_token_index],
-                "start": line_token_index,
-                "end": line_token_index,
+                "start": token_start,
+                "end": token_end,
+                "token_start": line_token_index,
+                "token_end": line_token_index,
                 "text": token,
             })
 
             prodigy_example["text"] = " ".join(line)
             prodigy_example["tokens"] = tokens
-            prodigy_example["labels"] = line_labels
+            prodigy_example["spans"] = spans
+            prodigy_example["meta"] = {"line": i}
 
             line_token_index += 1
             all_token_index += 1
+            token_start += token_end + 1
 
         prodigy_data.append(prodigy_example)
 

@@ -7,7 +7,6 @@ random.seed(42)
 np.random.seed(42)
 tensorflow.compat.v1.set_random_seed(42)
 
-import ipdb
 import os
 
 # Models and Utils scripts
